@@ -1,0 +1,71 @@
+version: '3.8'
+
+services:
+  face-recognition:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ov_fr_container
+    environment:
+      - OPENVINO_VERSION=2024.6.0
+      - LIBVA_DRIVER_NAME=iHD  # Intel GPU driver
+      - DISPLAY=${DISPLAY:-:0}  # For X11 forwarding if needed
+    volumes:
+      # Mount your data directories from parent directory
+      - ../videos:/app/videos
+      - ../database:/app/database
+      - ../buffalo_l:/app/buffalo_l
+      # Mount model files if they exist outside the container
+      - ../final_embeddings_adaface_ov_fp16.jsonl:/app/final_embeddings_adaface_ov_fp16.jsonl
+      - ../final_embeddings_adaface_ov.jsonl:/app/final_embeddings_adaface_ov.jsonl
+    devices:
+      # For Intel GPU access
+      - /dev/dri:/dev/dri
+      # For Intel NPU access (if available)
+      - /dev/accel0:/dev/accel0
+      - /dev/accel1:/dev/accel1
+    privileged: true  # Required for hardware access
+    command: /app/test_devices.sh
+    stdin_open: true
+    tty: true
+
+  # Intel GPU specific service
+  face-recognition-intel-gpu:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ov_fr_intel_gpu_container
+    environment:
+      - OPENVINO_VERSION=2024.6.0
+      - LIBVA_DRIVER_NAME=iHD
+      - DISPLAY=${DISPLAY:-:0}
+    volumes:
+      - ../videos:/app/videos
+      - ../database:/app/database
+      - ../buffalo_l:/app/buffalo_l
+      - ../final_embeddings_adaface_ov_fp16.jsonl:/app/final_embeddings_adaface_ov_fp16.jsonl
+      - ../final_embeddings_adaface_ov.jsonl:/app/final_embeddings_adaface_ov.jsonl
+    devices:
+      - /dev/dri:/dev/dri
+      - /dev/accel0:/dev/accel0
+      - /dev/accel1:/dev/accel1
+    privileged: true
+    command: /app/test_devices.sh
+    stdin_open: true
+    tty: true
+
+  # Alternative service for testing without GPU
+  face-recognition-cpu:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ov_fr_cpu_container
+    volumes:
+      - ../videos:/app/videos
+      - ../database:/app/database
+      - ../buffalo_l:/app/buffalo_l
+      - ../final_embeddings_adaface_ov_fp16.jsonl:/app/final_embeddings_adaface_ov_fp16.jsonl
+      - ../final_embeddings_adaface_ov.jsonl:/app/final_embeddings_adaface_ov.jsonl
+    command: /app/test_devices.sh
+    stdin_open: true
+    tty: true
